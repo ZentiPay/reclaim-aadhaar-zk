@@ -4,7 +4,6 @@
   "main": "index.js",
   "scripts": {
     "start": "ts-node index.ts",
-    "start-backend": "ts-node backend/index.ts",
     "build": "tsc",
     "download:zk-circuits": "node node_modules/@reclaimprotocol/zk-symmetric-crypto/lib/scripts/download-files && mkdir -p node_modules/@reclaimprotocol/attestor-core/node_modules/@reclaimprotocol/zk-symmetric-crypto/resources/resources && cp -r node_modules/@reclaimprotocol/zk-symmetric-crypto/resources/* node_modules/@reclaimprotocol/attestor-core/node_modules/@reclaimprotocol/zk-symmetric-crypto/resources",
     "dev": "ts-node-dev --respawn --transpile-only index.ts"

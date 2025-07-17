@@ -55,8 +55,9 @@ app.post("/startVerification", async (req: Request, res: Response) => {
 app.post("/generateProof", async (req: Request, res: Response) => {
   try {
     const userId = req.query.userId as string;
+    const setuRequestId = setuRequestIdCache[userId];
 
-    const url = `${process.env.SETU_URL}/digilocker/${userId}/aadhaar`;
+    const url = `${process.env.SETU_URL}/digilocker/${setuRequestId}/aadhaar`;
     const proof = await reclaimClient.zkFetch(url, {
       method: "GET",
       headers: {

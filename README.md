@@ -1,31 +1,29 @@
-# zkfetch-express-example
+# Reclaim Aadhaar ZK
 
-This is an example project that demonstrates how to use zk-fetch on an Express.js server. The project consists of two services:
+This project demonstrates how to use Reclaim Protocol's zk-fetch to generate zero-knowledge proofs for Aadhaar verification through Setu's DigiLocker API. It provides a secure way to verify Aadhaar data without exposing sensitive information.
 
-1. **Main service** (port 8080): Generates zk-fetch proofs by calling a backend provider API
-2. **Backend provider service** (port 8081): Simulates a data provider API that returns user data
-
-The main service fetches user data from the backend provider and generates cryptographic proofs using zk-fetch, which can then be used for on-chain verification.
+The service integrates with Setu's DigiLocker API to initiate Aadhaar verification and then generates cryptographic proofs using Reclaim Protocol's zk-fetch, which can be used for on-chain verification.
 
 ## Features
 
-- Generate zk-fetch proofs for API responses
-- Verify proof validity
+- Initiate Aadhaar verification through Setu's DigiLocker API
+- Generate zk-fetch proofs for Aadhaar verification responses
+- Verify proof validity using Reclaim Protocol
 - Transform proofs for on-chain use
-- Dual-service architecture demonstrating real-world usage patterns
+- Secure handling of Aadhaar verification without exposing sensitive data
 
 ## Installation
 
 1. Clone the repository:
 
     ```bash
-    git clone https://gitlab.reclaimprotocol.org/starterpacks/zkfetch-express-example
+    git clone https://github.com/naman-gupta99/reclaim-aadhaar-zk
     ```
 
 2. Navigate into the project directory:
 
     ```bash
-    cd zkfetch-express-example
+    cd reclaim-aadhaar-zk
     ```
 
 3. Install dependencies:
@@ -34,50 +32,44 @@ The main service fetches user data from the backend provider and generates crypt
     npm install
     ```
 
-4. Download the zk-circuits:
+4. Install the dotenv package for environment variables:
+
+    ```bash
+    npm install dotenv
+    ```
+
+5. Download the zk-circuits:
 
     ```bash
     npm run download:zk-circuits
     ```
 
-5. Set up environment variables in `.env`: 
+6. Set up environment variables in `.env`: 
 
     ```bash
     APP_ID=your_app_id
     APP_SECRET=your_app_secret
     PORT=8080
-    PROVIDER_URL=http://localhost:8081
+    SETU_URL=https://dg-sandbox.setu.co/api
     ```
 
     You can get your `APP_ID` and `APP_SECRET` from [Reclaim Protocol Developer Portal](https://dev.reclaimprotocol.org).
-    - go to the [Reclaim Protocol Developer Portal](https://dev.reclaimprotocol.org)
-    - create a new public data (zkfetch) application and get the `APP_ID` and `APP_SECRET` from the application
+    - Go to the [Reclaim Protocol Developer Portal](https://dev.reclaimprotocol.org)
+    - Create a new public data (zkfetch) application and get the `APP_ID` and `APP_SECRET` from the application
     
-    **Note**: The `PROVIDER_URL` should point to your backend provider service. In this example, it points to the local backend service running on port 8081.
+    **Note**: The `SETU_URL` should point to Setu's DigiLocker API endpoint. The example above uses the sandbox environment.
 
 ## Usage
 
-### Running the Services
+### Running the Service
 
-This project requires both services to be running:
+This project runs a single Express.js service that handles Aadhaar verification:
 
-1. **Start the backend provider service** (in a separate terminal):
-    ```bash
-    npm run start-backend
-    ```
-    This will start the provider API on `http://localhost:8081`.
-
-    You'll need to host the provider service on a publicly accessible URL if you want to test it with the main service. You can use tools like [ngrok](https://ngrok.com/) to expose your local server to the internet. For example:
-
-    ```bash
-    ngrok http 8081
-    ```
-
-2. **Start the main service**:
+1. **Start the main service**:
     ```bash
     npm start
     ```
-    This will start the main zk-fetch service on `http://localhost:8080`.
+    This will start the Aadhaar ZK verification service on `http://localhost:8080`.
 
 Alternatively, for development with auto-reload:
     ```bash
@@ -86,8 +78,9 @@ Alternatively, for development with auto-reload:
 
 ### Service Architecture
 
-- **Main Service** (`index.ts`): Handles zk-fetch proof generation by calling the provider service
-- **Provider Service** (`backend/index.ts`): Simulates a data provider API that returns user information
+The service provides two main endpoints:
+- **Verification Initiation**: Starts the Aadhaar verification process with Setu's DigiLocker
+- **Proof Generation**: Generates ZK proofs for the verified Aadhaar data
 
 ## Endpoints
 
@@ -98,36 +91,34 @@ Alternatively, for development with auto-reload:
 - **Description**: Health check endpoint
 - **Response**: "gm gm! api is running"
 
-### GET /generateProof
+#### POST /startVerification
 
-- **Description**: Generates a zk-fetch proof by calling the provider service's `/getUserId` endpoint. The proof verifies that the API call was made and captures the response data cryptographically.
-- **Response**: Returns both the raw proof and the transformed proof for on-chain use.
-
-### Provider Service (Port 8081)
-
-#### GET /
-
-- **Description**: Health check endpoint for the provider service
-- **Response**: "gm gm! api is running"
-
-#### GET /getUserId
-
-- **Description**: Returns a simulated user ID. This endpoint is called by the main service to generate proofs.
-- **Response**: 
+- **Description**: Initiates Aadhaar verification process through Setu's DigiLocker API
+- **Query Parameters**: 
+  - `userId` (string): Unique identifier for the user
+- **Response**: Returns verification URL and success message
+- **Example Response**:
 ```json
 {
-  "userId": "12345"
+  "message": "Verification initiated successfully",
+  "url": "https://dg-sandbox.setu.co/api/digilocker/verify?requestId=..."
 }
 ```
 
-Example response from `/generateProof`:
+#### POST /generateProof
+
+- **Description**: Generates a zk-fetch proof for the completed Aadhaar verification. This endpoint should be called after the user has completed the verification process through the URL returned by `/startVerification`.
+- **Query Parameters**: 
+  - `userId` (string): The same user ID used in the verification initiation
+- **Response**: Returns both the raw proof and the transformed proof for on-chain use.
+- **Example Response**:
 
 ```json
 {
   "transformedProof": {
     "claimInfo": {
-      "context": "{\"extractedParameters\":{\"userId\":\"12345\"},\"providerHash\":\"0x...\"}",
-      "parameters": "{\"body\":\"\",\"method\":\"GET\",\"responseMatches\":[...],\"url\":\"http://localhost:8081/getUserId\"}",
+      "context": "{\"extractedParameters\":{...},\"providerHash\":\"0x...\"}",
+      "parameters": "{\"body\":\"\",\"method\":\"GET\",\"responseMatches\":[...],\"url\":\"https://dg-sandbox.setu.co/api/digilocker/.../aadhaar\"}",
       "provider": "http"
     },
     "signedClaim": {
@@ -143,17 +134,17 @@ Example response from `/generateProof`:
   "proof": {
     "claimData": {
       "provider": "http",
-      "parameters": "{\"body\":\"\",\"method\":\"GET\",\"url\":\"http://localhost:8081/getUserId\"}",
+      "parameters": "{\"body\":\"\",\"method\":\"GET\",\"url\":\"https://dg-sandbox.setu.co/api/digilocker/.../aadhaar\"}",
       "owner": "0x...",
       "timestampS": 1735996331,
-      "context": "{\"extractedParameters\":{\"userId\":\"12345\"},\"providerHash\":\"0x...\"}",
+      "context": "{\"extractedParameters\":{...},\"providerHash\":\"0x...\"}",
       "identifier": "0x...",
       "epoch": 1
     },
     "identifier": "0x...",
     "signatures": ["0x..."],
     "extractedParameterValues": {
-      "userId": "12345"
+      // Aadhaar verification data
     },
     "witnesses": [
       {
@@ -167,11 +158,14 @@ Example response from `/generateProof`:
 
 ## How It Works
 
-1. The main service receives a request to `/generateProof`
-2. It uses the Reclaim zk-fetch client to make a verifiable request to the provider service
-3. The provider service returns user data (simulated as userId: "12345")
-4. The zk-fetch generates cryptographic proof of the API call and response
-5. The proof is verified for validity
-6. The proof is transformed for on-chain use and returned
+1. **Verification Initiation**: A client calls `/startVerification` with a `userId` parameter
+2. The service makes a request to Setu's DigiLocker API to initiate Aadhaar verification
+3. Setu returns a verification URL that the user must visit to complete the Aadhaar verification process
+4. The service caches the Setu request ID associated with the user ID for later use
+5. **Proof Generation**: After the user completes verification, the client calls `/generateProof` with the same `userId`
+6. The service retrieves the cached Setu request ID and makes a zk-fetch request to get the verified Aadhaar data
+7. The zk-fetch generates cryptographic proof of the API call and Aadhaar verification response
+8. The proof is verified for validity using Reclaim Protocol's verification system
+9. The proof is transformed for on-chain use and returned to the client
 
-This demonstrates how zk-fetch can be used to create verifiable proofs of API responses, which can then be used in blockchain applications or other systems requiring cryptographic verification of off-chain data.
+This demonstrates how zk-fetch can be used to create verifiable proofs of Aadhaar verification without exposing sensitive personal information, enabling privacy-preserving identity verification for blockchain applications.
