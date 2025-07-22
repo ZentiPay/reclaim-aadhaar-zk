@@ -10,16 +10,12 @@ const reclaimClient = new ReclaimClient(
 );
 const app = express();
 
-const setuRequestIdCache: Record<string, string> = {};
-
 app.get("/", (_: Request, res: Response) => {
   res.send("gm gm! api is running");
 });
 
 app.post("/startVerification", async (req: Request, res: Response) => {
   try {
-    const userId = req.query.userId as string;
-
     const url = `${process.env.SETU_URL}/digilocker`;
     const response = await fetch(url, {
       method: "POST",
@@ -37,10 +33,7 @@ app.post("/startVerification", async (req: Request, res: Response) => {
     }
 
     const data = await response.json();
-    const setuRequestId = data.id;
     const setuUrl = data.url;
-
-    setuRequestIdCache[userId] = setuRequestId;
 
     return res.status(200).json({
       message: "Verification initiated successfully",
@@ -54,8 +47,7 @@ app.post("/startVerification", async (req: Request, res: Response) => {
 
 app.post("/generateProof", async (req: Request, res: Response) => {
   try {
-    const userId = req.query.userId as string;
-    const setuRequestId = setuRequestIdCache[userId];
+    const setuRequestId = req.query.setuRequestId as string;
 
     const url = `${process.env.SETU_URL}/digilocker/${setuRequestId}/aadhaar`;
     const proof = await reclaimClient.zkFetch(url, {
