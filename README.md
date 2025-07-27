@@ -94,8 +94,6 @@ The service provides two main endpoints:
 #### POST /startVerification
 
 - **Description**: Initiates Aadhaar verification process through Setu's DigiLocker API
-- **Query Parameters**: 
-  - `userId` (string): Unique identifier for the user
 - **Response**: Returns verification URL and success message
 - **Example Response**:
 ```json
@@ -109,7 +107,7 @@ The service provides two main endpoints:
 
 - **Description**: Generates a zk-fetch proof for the completed Aadhaar verification. This endpoint should be called after the user has completed the verification process through the URL returned by `/startVerification`.
 - **Query Parameters**: 
-  - `userId` (string): The same user ID used in the verification initiation
+  - `setuRequestId` (string): Setu Request Id from the redirected page URL.
 - **Response**: Returns both the raw proof and the transformed proof for on-chain use.
 - **Example Response**:
 
