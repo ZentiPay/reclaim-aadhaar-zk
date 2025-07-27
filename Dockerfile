@@ -5,19 +5,19 @@ FROM node:20-alpine
 WORKDIR /app
  
 # Copy package.json and package-lock.json
-COPY package*.json ./
+COPY package*.json tsconfig.json ./
  
 # Install dependencies
 RUN npm install
 
-# Build TypeScript
-RUN npm run build
- 
 # Copy the rest of your application files
 COPY . .
+
+# Build TypeScript
+RUN npm run build
  
 # Expose the port your app runs on
 EXPOSE 8080
  
 # Define the command to run your app
-CMD ["node", "run", "dev"]
+CMD ["node", "dist/index.js"]

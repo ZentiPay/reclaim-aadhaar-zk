@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import { ReclaimClient } from "@reclaimprotocol/zk-fetch";
 import { transformForOnchain, verifyProof } from "@reclaimprotocol/js-sdk";
 import dotenv from "dotenv";
+import cors from "cors";
 dotenv.config();
 
 const reclaimClient = new ReclaimClient(
@@ -9,6 +10,7 @@ const reclaimClient = new ReclaimClient(
   process.env.APP_SECRET!
 );
 const app = express();
+app.use(cors());
 
 app.get("/", (_: Request, res: Response) => {
   res.send("gm gm! api is running");
