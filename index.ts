@@ -25,6 +25,7 @@ app.get("/", (_: Request, res: Response) => {
 app.post("/startVerification", async (req: Request, res: Response) => {
   try {
     const url = `${process.env.SETU_URL}/digilocker`;
+    console.log("url:", url);
     const response = await fetch(url, {
       method: "POST",
       headers: {
