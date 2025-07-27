@@ -35,6 +35,7 @@ app.post("/startVerification", async (req: Request, res: Response) => {
       },
       body: JSON.stringify({ redirectUrl: "https://setu.co" }),
     });
+    console.log("response:", response);
 
     if (!response.ok) {
       return res.status(400).send("Failed to start verification");
