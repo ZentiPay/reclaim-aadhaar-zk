@@ -6,6 +6,9 @@ WORKDIR /app
  
 # Copy package.json and package-lock.json
 COPY package*.json tsconfig.json ./
+
+# Install git for npm to fetch git dependencies
+RUN apk add --no-cache git
  
 # Install dependencies
 RUN npm install
