@@ -5,6 +5,12 @@ import dotenv from "dotenv";
 import cors from "cors";
 dotenv.config();
 
+
+console.log("APP_ID:", process.env.APP_ID);
+console.log("APP_SECRET:", process.env.APP_SECRET);
+console.log("SETU_URL:", process.env.SETU_URL);
+
+
 const reclaimClient = new ReclaimClient(
   process.env.APP_ID!,
   process.env.APP_SECRET!
