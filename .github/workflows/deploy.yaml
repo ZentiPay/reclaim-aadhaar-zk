@@ -43,7 +43,7 @@ jobs:
 
           # Pulling latest code
           echo "Pulling latest code..."
-          git pull origin main
+          git pull origin master
 
           # Stop existing server
           echo "Stopping existing container..."
