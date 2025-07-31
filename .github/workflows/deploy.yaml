@@ -19,10 +19,42 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Option 1: Using credentials_json (your current approach - fixed)
+      # Debug step to check if secrets are available
+      - name: Debug secrets
+        run: |
+          echo "Checking secrets availability..."
+          if [ -z "${{ secrets.GCP_SA_KEY }}" ]; then
+            echo "❌ GCP_SA_KEY is empty or not set"
+          else
+            echo "✅ GCP_SA_KEY is available (${#GCP_SA_KEY} characters)"
+            # Check if it starts with { (JSON format)
+            if [[ "${{ secrets.GCP_SA_KEY }}" == \{* ]]; then
+              echo "✅ Secret appears to be in JSON format"
+            else
+              echo "❌ Secret does not appear to be in JSON format"
+            fi
+          fi
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # Alternative approach if the above fails:
+      # - name: Decode and authenticate (if using base64 encoded secret)
+      #   run: |
+      #     echo "${{ secrets.GCP_SA_KEY_BASE64 }}" | base64 -d > /tmp/gcp-key.json
+      #     export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
+      #   if: failure()
+
+      # Option 2: Using Workload Identity Federation (more secure alternative)
+      # Uncomment this block and comment out the above if you want to use WIF
+      # - name: Authenticate to Google Cloud
+      #   uses: google-github-actions/auth@v2
+      #   with:
+      #     workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+      #     service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
       - name: Set up cloud SDK
         uses: google-github-actions/setup-gcloud@v2
@@ -41,14 +73,29 @@ jobs:
           # Navigate to app directory
           cd /home/${{ env.VM_USER }}/${{ env.APP_NAME }}
 
-          # Pulling latest code
+          # Pull latest code
           echo "Pulling latest code..."
           git pull origin master
 
           # Stop existing server
           echo "Stopping existing container..."
-          sudo docker stop ${{ env.APP_NAME }} || true
-          sudo docker rm ${{ env.APP_NAME }} || true
+          echo "Checking for running containers on port 8080..."
+          sudo docker ps --filter "publish=8080" --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}"
+          
+          # Stop container by name
+          sudo docker stop ${{ env.APP_NAME }} 2>/dev/null || echo "Container ${{ env.APP_NAME }} not running"
+          sudo docker rm ${{ env.APP_NAME }} 2>/dev/null || echo "Container ${{ env.APP_NAME }} not found"
+          
+          # Also stop any container using port 8080 (backup cleanup)
+          CONTAINERS_ON_PORT=$(sudo docker ps --filter "publish=8080" -q)
+          if [ ! -z "$CONTAINERS_ON_PORT" ]; then
+            echo "Found containers still using port 8080, stopping them..."
+            sudo docker stop $CONTAINERS_ON_PORT
+            sudo docker rm $CONTAINERS_ON_PORT
+          fi
+          
+          # Wait a moment for port to be released
+          sleep 2
 
           # Build new image
           echo "Building Docker image..."
@@ -56,6 +103,8 @@ jobs:
 
           # Run new container
           echo "Starting new container..."
+          echo "App name: ${{ env.APP_NAME }}"
+          echo "Running command: docker run -d --name ${{ env.APP_NAME }} --restart unless-stopped -p 8080:8080 ${{ env.APP_NAME }}:latest"
           sudo docker run -d \
             --name ${{ env.APP_NAME }} \
             --restart unless-stopped \
@@ -66,7 +115,7 @@ jobs:
           echo "Cleaning up..."
           sudo docker image prune -f
 
-          echo "Deployement completed successfully"
+          echo "Deployment completed successfully"
           EOF
 
           # Copy and execute deployment script
