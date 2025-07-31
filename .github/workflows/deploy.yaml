@@ -52,15 +52,15 @@ jobs:
 
           # Build new image
           echo "Building Docker image..."
-          sudo docker build -t ${{ env.APP_NAME }} .
+          sudo docker build -t ${{ env.APP_NAME }}:latest .
 
           # Run new container
           echo "Starting new container..."
           sudo docker run -d \
-            -- name ${{ env.APP_NAME }} \
+            --name ${{ env.APP_NAME }} \
             --restart unless-stopped \
             -p 8080:8080 \
-            ${{ env.APP_NAME }}
+            ${{ env.APP_NAME }}:latest
 
           # Clean up old images
           echo "Cleaning up..."
