@@ -14,7 +14,7 @@ const app = express();
 app.use(cors());
 
 app.get("/", (_: Request, res: Response) => {
-  res.send("GM GM! API is running");
+  res.send("GM GM Everyone! API is running");
 });
 
 app.post("/startVerification", async (req: Request, res: Response) => {
