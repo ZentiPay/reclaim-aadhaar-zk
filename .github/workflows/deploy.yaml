@@ -31,7 +31,7 @@ jobs:
 
       - name: Deploy to VM
         run: |
-          # Create deployment script for deployment
+          # Create deployment script
           cat > deploy.sh << 'EOF'
           #!/bin/bash
           set -e
