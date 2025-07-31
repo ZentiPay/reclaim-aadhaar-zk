@@ -1,0 +1,74 @@
+name: Deploy to Google Cloud VM
+
+on:
+  push:
+    branches: [ master ]
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  VM_ZONE: ${{ secrets.VM_ZONE }}
+  VM_NAME: ${{ secrets.VM_NAME }}
+  VM_USER: ${{ secrets.VM_USER }}
+  APP_NAME: ${{ secrets.APP_NAME }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Deploy to VM
+        run: |
+          # Create deployment script
+          cat > deploy.sh << 'EOF'
+          #!/bin/bash
+          set -e
+
+          echo "Starting deployment..."
+
+          # Navigate to app directory
+          cd /home/${{ env.VM_USER }}/${{ env.APP_NAME }}
+
+          # Pulling latest code
+          echo "Pulling latest code..."
+          git pull origin main
+
+          # Stop existing server
+          echo "Stopping existing container..."
+          sudo docker stop ${{ env.APP_NAME }} || true
+          sudo docker rm ${{ env.APP_NAME }} || true
+
+          # Build new image
+          echo "Building Docker image..."
+          sudo docker build -t ${{ env.APP_NAME }}:latest .
+
+          # Run new container
+          echo "Starting new container..."
+          sudo docker run -d \
+            -- name ${{ env.APP_NAME }} \
+            --restart unless-stopped \
+            -p 8080:8080 \
+            ${{ env.APP_NAME }}:latest
+
+          # Clean up old images
+          echo "Cleaning up..."
+          sudo docker image prune -f
+
+          echo "Deployement completed successfully"
+          EOF
+
+          # Copy and execute deployment script
+          gcloud compute scp deploy.sh ${{ env.VM_USER }}@${{ env.VM_NAME }}:~/deploy.sh --zone=${{ env.VM_ZONE }}
+          gcloud compute ssh ${{ env.VM_USER }}@${{ env.VM_NAME }} --zone=${{ env.VM_ZONE }} --command="chmod +x ~/deploy.sh && ~/deploy.sh"
