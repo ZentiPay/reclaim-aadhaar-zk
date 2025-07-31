@@ -6,11 +6,6 @@ import cors from "cors";
 dotenv.config();
 
 
-console.log("APP_ID:", process.env.APP_ID);
-console.log("APP_SECRET:", process.env.APP_SECRET);
-console.log("SETU_URL:", process.env.SETU_URL);
-
-
 const reclaimClient = new ReclaimClient(
   process.env.APP_ID!,
   process.env.APP_SECRET!
@@ -25,7 +20,6 @@ app.get("/", (_: Request, res: Response) => {
 app.post("/startVerification", async (req: Request, res: Response) => {
   try {
     const url = `${process.env.SETU_URL}/digilocker`;
-    console.log("url:", url);
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -36,7 +30,6 @@ app.post("/startVerification", async (req: Request, res: Response) => {
       },
       body: JSON.stringify({ redirectUrl: "https://setu.co" }),
     });
-    console.log("response:", response);
 
     if (!response.ok) {
       return res.status(400).send("Failed to start verification");
